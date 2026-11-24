@@ -1,0 +1,363 @@
+{
+  "entities": {
+    "Event": {
+      "title": "Event",
+      "description": "A technical event, workshop, seminar, or extracurricular activity hosted at the engineering college.",
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128,
+          "pattern": "^[a-zA-Z0-9_\\-]+$"
+        },
+        "title": {
+          "type": "string",
+          "minLength": 3,
+          "maxLength": 120
+        },
+        "category": {
+          "type": "string",
+          "enum": ["Technical", "Workshop", "Seminar", "Extracurricular"]
+        },
+        "date": {
+          "type": "string",
+          "minLength": 10,
+          "maxLength": 10,
+          "pattern": "^\\d{4}-\\d{2}-\\d{2}$"
+        },
+        "time": {
+          "type": "string",
+          "minLength": 3,
+          "maxLength": 40
+        },
+        "venue": {
+          "type": "string",
+          "minLength": 2,
+          "maxLength": 100
+        },
+        "description": {
+          "type": "string",
+          "minLength": 10,
+          "maxLength": 1500
+        },
+        "department": {
+          "type": "string",
+          "minLength": 2,
+          "maxLength": 80
+        },
+        "deadline": {
+          "type": "string",
+          "minLength": 10,
+          "maxLength": 32
+        },
+        "deadlineMs": {
+          "type": "integer"
+        },
+        "capacity": {
+          "type": "integer"
+        },
+        "registeredCount": {
+          "type": "integer"
+        },
+        "status": {
+          "type": "string",
+          "enum": ["upcoming", "completed"]
+        },
+        "visibility": {
+          "type": "string",
+          "enum": ["public"]
+        },
+        "imageKey": {
+          "type": "string",
+          "enum": ["hackathon", "robotics", "seminar", "cultural"]
+        },
+        "organizerId": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128,
+          "pattern": "^[a-zA-Z0-9_\\-]+$"
+        },
+        "organizerName": {
+          "type": "string",
+          "minLength": 2,
+          "maxLength": 80
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "updatedAt": {
+          "type": "string",
+          "format": "date-time"
+        }
+      },
+      "required": [
+        "id",
+        "title",
+        "category",
+        "date",
+        "time",
+        "venue",
+        "description",
+        "department",
+        "deadline",
+        "deadlineMs",
+        "capacity",
+        "registeredCount",
+        "status",
+        "visibility",
+        "imageKey",
+        "organizerId",
+        "organizerName",
+        "createdAt",
+        "updatedAt"
+      ]
+    },
+    "Registration": {
+      "title": "Registration",
+      "description": "A student's confirmed registration for a specific campus event.",
+      "type": "object",
+      "properties": {
+        "registrationNumber": {
+          "type": "string",
+          "minLength": 10,
+          "maxLength": 24,
+          "pattern": "^CC-[0-9]{4}-[A-Z0-9]{4,8}$"
+        },
+        "eventId": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128,
+          "pattern": "^[a-zA-Z0-9_\\-]+$"
+        },
+        "eventTitle": {
+          "type": "string",
+          "minLength": 3,
+          "maxLength": 120
+        },
+        "eventCategory": {
+          "type": "string",
+          "enum": ["Technical", "Workshop", "Seminar", "Extracurricular"]
+        },
+        "eventDate": {
+          "type": "string",
+          "minLength": 10,
+          "maxLength": 10,
+          "pattern": "^\\d{4}-\\d{2}-\\d{2}$"
+        },
+        "eventTime": {
+          "type": "string",
+          "minLength": 3,
+          "maxLength": 40
+        },
+        "eventVenue": {
+          "type": "string",
+          "minLength": 2,
+          "maxLength": 100
+        },
+        "userId": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128,
+          "pattern": "^[a-zA-Z0-9_\\-]+$"
+        },
+        "eventOrganizerId": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128,
+          "pattern": "^[a-zA-Z0-9_\\-]+$"
+        },
+        "fullName": {
+          "type": "string",
+          "minLength": 2,
+          "maxLength": 80
+        },
+        "studentId": {
+          "type": "string",
+          "minLength": 4,
+          "maxLength": 24,
+          "pattern": "^[a-zA-Z0-9\\-]{4,24}$"
+        },
+        "department": {
+          "type": "string",
+          "minLength": 2,
+          "maxLength": 60
+        },
+        "year": {
+          "type": "string",
+          "enum": ["1st Year", "2nd Year", "3rd Year", "4th Year"]
+        },
+        "email": {
+          "type": "string",
+          "minLength": 5,
+          "maxLength": 120,
+          "pattern": "^[^\\s@]+@[^\\s@]+\\.[^\\s@]+$"
+        },
+        "phone": {
+          "type": "string",
+          "minLength": 7,
+          "maxLength": 20,
+          "pattern": "^[0-9+\\-\\s()]{7,20}$"
+        },
+        "studentIdHash": {
+          "type": "string",
+          "minLength": 36,
+          "maxLength": 40,
+          "pattern": "^sid_[a-f0-9]{32}$"
+        },
+        "emailHash": {
+          "type": "string",
+          "minLength": 36,
+          "maxLength": 40,
+          "pattern": "^eml_[a-f0-9]{32}$"
+        },
+        "registeredAt": {
+          "type": "string",
+          "format": "date-time"
+        }
+      },
+      "required": [
+        "registrationNumber",
+        "eventId",
+        "eventTitle",
+        "eventCategory",
+        "eventDate",
+        "eventTime",
+        "eventVenue",
+        "userId",
+        "eventOrganizerId",
+        "fullName",
+        "studentId",
+        "department",
+        "year",
+        "email",
+        "phone",
+        "studentIdHash",
+        "emailHash",
+        "registeredAt"
+      ]
+    },
+    "RegistrationLock": {
+      "title": "RegistrationLock",
+      "description": "Atomic uniqueness lock preventing duplicate student ID or email registrations per event.",
+      "type": "object",
+      "properties": {
+        "uid": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128,
+          "pattern": "^[a-zA-Z0-9_\\-]+$"
+        },
+        "eventId": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128,
+          "pattern": "^[a-zA-Z0-9_\\-]+$"
+        },
+        "lockType": {
+          "type": "string",
+          "enum": ["studentId", "email"]
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time"
+        }
+      },
+      "required": ["uid", "eventId", "lockType", "createdAt"]
+    },
+    "Organizer": {
+      "title": "Organizer",
+      "description": "Verified college event organizer record granting event creation, editing, and participant roster access.",
+      "type": "object",
+      "properties": {
+        "uid": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128,
+          "pattern": "^[a-zA-Z0-9_\\-]+$"
+        },
+        "email": {
+          "type": "string",
+          "minLength": 5,
+          "maxLength": 120,
+          "pattern": "^[^\\s@]+@[^\\s@]+\\.[^\\s@]+$"
+        },
+        "displayName": {
+          "type": "string",
+          "minLength": 2,
+          "maxLength": 80
+        },
+        "department": {
+          "type": "string",
+          "minLength": 2,
+          "maxLength": 80
+        },
+        "addedBy": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time"
+        }
+      },
+      "required": ["uid", "email", "displayName", "department", "addedBy", "createdAt"]
+    },
+    "UserProfile": {
+      "title": "UserProfile",
+      "description": "Minimal authenticated user metadata.",
+      "type": "object",
+      "properties": {
+        "uid": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128,
+          "pattern": "^[a-zA-Z0-9_\\-]+$"
+        },
+        "displayName": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 80
+        },
+        "email": {
+          "type": "string",
+          "minLength": 5,
+          "maxLength": 120
+        },
+        "updatedAt": {
+          "type": "string",
+          "format": "date-time"
+        }
+      },
+      "required": ["uid", "displayName", "email", "updatedAt"]
+    }
+  },
+  "firestore": {
+    "/events/{eventId}": {
+      "schema": { "$ref": "#/entities/Event" },
+      "description": "Publicly browsable campus events managed by verified organizers."
+    },
+    "/events/{eventId}/registrations/{userId}": {
+      "schema": { "$ref": "#/entities/Registration" },
+      "description": "Student event registrations, readable only by the student owner or an organizer."
+    },
+    "/events/{eventId}/locks/{lockId}": {
+      "schema": { "$ref": "#/entities/RegistrationLock" },
+      "description": "Hashed studentId and email uniqueness locks to block duplicate registrations atomically."
+    },
+    "/users/{userId}": {
+      "schema": { "$ref": "#/entities/UserProfile" },
+      "description": "Private user profile metadata."
+    },
+    "/users/{userId}/registrations/{eventId}": {
+      "schema": { "$ref": "#/entities/Registration" },
+      "description": "Owner-scoped registration confirmations for the My Registrations view."
+    },
+    "/organizers/{userId}": {
+      "schema": { "$ref": "#/entities/Organizer" },
+      "description": "Trusted allowlist of verified campus event organizers."
+    }
+  }
+}

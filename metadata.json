@@ -1,0 +1,8 @@
+{
+  "name": "CampusConnect",
+  "description": "Student Activity and Event Management Portal for engineering college technical events, workshops, seminars, and extracurricular activities.",
+  "requestFramePermissions": [],
+  "majorCapabilities": [
+    "MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"
+  ]
+}

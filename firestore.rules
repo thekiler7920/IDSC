@@ -1,0 +1,294 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // Global Safety Net (Default Deny)
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    // --- Reusable Hardened Primitives ---
+    function isValidId(id) {
+      return id is string && id.size() >= 1 && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$');
+    }
+
+    function incoming() {
+      return request.resource.data;
+    }
+
+    function existing() {
+      return resource.data;
+    }
+
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function isVerifiedUser() {
+      return isSignedIn() && request.auth.token.email_verified == true;
+    }
+
+    function isBootstrappedAdmin() {
+      return isVerifiedUser() && request.auth.token.email == 'avanishpatil1234@gmail.com';
+    }
+
+    function isOrganizer() {
+      return isBootstrappedAdmin() || (
+        isVerifiedUser() && exists(/databases/$(database)/documents/organizers/$(request.auth.uid))
+      );
+    }
+
+    // --- Validation Blueprints ---
+    function isValidEvent(data) {
+      return data.keys().hasAll([
+          'id', 'title', 'category', 'date', 'time', 'venue', 'description',
+          'department', 'deadline', 'deadlineMs', 'capacity', 'registeredCount',
+          'status', 'visibility', 'imageKey', 'organizerId', 'organizerName',
+          'createdAt', 'updatedAt'
+        ])
+        && data.keys().hasOnly([
+          'id', 'title', 'category', 'date', 'time', 'venue', 'description',
+          'department', 'deadline', 'deadlineMs', 'capacity', 'registeredCount',
+          'status', 'visibility', 'imageKey', 'organizerId', 'organizerName',
+          'createdAt', 'updatedAt'
+        ])
+        && isValidId(data.id)
+        && data.title is string && data.title.size() >= 3 && data.title.size() <= 120
+        && data.category in ['Technical', 'Workshop', 'Seminar', 'Extracurricular']
+        && data.date is string && data.date.size() == 10 && data.date.matches('^\\d{4}-\\d{2}-\\d{2}$')
+        && data.time is string && data.time.size() >= 3 && data.time.size() <= 40
+        && data.venue is string && data.venue.size() >= 2 && data.venue.size() <= 100
+        && data.description is string && data.description.size() >= 10 && data.description.size() <= 1500
+        && data.department is string && data.department.size() >= 2 && data.department.size() <= 80
+        && data.deadline is string && data.deadline.size() >= 10 && data.deadline.size() <= 32
+        && data.deadlineMs is int && data.deadlineMs > 0
+        && data.capacity is int && data.capacity >= 1 && data.capacity <= 5000
+        && data.registeredCount is int && data.registeredCount >= 0 && data.registeredCount <= data.capacity
+        && data.status in ['upcoming', 'completed']
+        && data.visibility == 'public'
+        && data.imageKey in ['hackathon', 'robotics', 'seminar', 'cultural']
+        && isValidId(data.organizerId)
+        && data.organizerName is string && data.organizerName.size() >= 2 && data.organizerName.size() <= 80
+        && data.createdAt is timestamp
+        && data.updatedAt is timestamp;
+    }
+
+    function isValidRegistration(data, expectedEventId, expectedUserId) {
+      return data.keys().hasAll([
+          'registrationNumber', 'eventId', 'eventTitle', 'eventCategory',
+          'eventDate', 'eventTime', 'eventVenue', 'userId', 'eventOrganizerId',
+          'fullName', 'studentId', 'department', 'year', 'email', 'phone',
+          'studentIdHash', 'emailHash', 'registeredAt'
+        ])
+        && data.keys().hasOnly([
+          'registrationNumber', 'eventId', 'eventTitle', 'eventCategory',
+          'eventDate', 'eventTime', 'eventVenue', 'userId', 'eventOrganizerId',
+          'fullName', 'studentId', 'department', 'year', 'email', 'phone',
+          'studentIdHash', 'emailHash', 'registeredAt'
+        ])
+        && data.registrationNumber is string && data.registrationNumber.size() >= 10 && data.registrationNumber.size() <= 24
+        && data.registrationNumber.matches('^CC-[0-9]{4}-[A-Z0-9]{4,8}$')
+        && isValidId(data.eventId) && data.eventId == expectedEventId
+        && data.eventTitle is string && data.eventTitle.size() >= 3 && data.eventTitle.size() <= 120
+        && data.eventCategory in ['Technical', 'Workshop', 'Seminar', 'Extracurricular']
+        && data.eventDate is string && data.eventDate.size() == 10 && data.eventDate.matches('^\\d{4}-\\d{2}-\\d{2}$')
+        && data.eventTime is string && data.eventTime.size() >= 3 && data.eventTime.size() <= 40
+        && data.eventVenue is string && data.eventVenue.size() >= 2 && data.eventVenue.size() <= 100
+        && isValidId(data.userId) && data.userId == expectedUserId
+        && isValidId(data.eventOrganizerId)
+        && data.fullName is string && data.fullName.size() >= 2 && data.fullName.size() <= 80
+        && data.studentId is string && data.studentId.size() >= 4 && data.studentId.size() <= 24
+        && data.studentId.matches('^[a-zA-Z0-9\\-]{4,24}$')
+        && data.department is string && data.department.size() >= 2 && data.department.size() <= 60
+        && data.year in ['1st Year', '2nd Year', '3rd Year', '4th Year']
+        && data.email is string && data.email.size() >= 5 && data.email.size() <= 120
+        && data.email.matches('^[^\\s@]+@[^\\s@]+\\.[^\\s@]+$')
+        && data.phone is string && data.phone.size() >= 7 && data.phone.size() <= 20
+        && data.phone.matches('^[0-9+\\-\\s()]{7,20}$')
+        && data.studentIdHash is string && data.studentIdHash.size() >= 36 && data.studentIdHash.size() <= 40
+        && data.studentIdHash.matches('^sid_[a-f0-9]{32}$')
+        && data.emailHash is string && data.emailHash.size() >= 36 && data.emailHash.size() <= 40
+        && data.emailHash.matches('^eml_[a-f0-9]{32}$')
+        && data.registeredAt is timestamp;
+    }
+
+    function isValidLock(data, expectedEventId, expectedUid) {
+      return data.keys().hasAll(['uid', 'eventId', 'lockType', 'createdAt'])
+        && data.keys().hasOnly(['uid', 'eventId', 'lockType', 'createdAt'])
+        && isValidId(data.uid) && data.uid == expectedUid
+        && isValidId(data.eventId) && data.eventId == expectedEventId
+        && data.lockType in ['studentId', 'email']
+        && data.createdAt is timestamp;
+    }
+
+    function isValidOrganizer(data, expectedUid) {
+      return data.keys().hasAll(['uid', 'email', 'displayName', 'department', 'addedBy', 'createdAt'])
+        && data.keys().hasOnly(['uid', 'email', 'displayName', 'department', 'addedBy', 'createdAt'])
+        && isValidId(data.uid) && data.uid == expectedUid
+        && data.email is string && data.email.size() >= 5 && data.email.size() <= 120
+        && data.email.matches('^[^\\s@]+@[^\\s@]+\\.[^\\s@]+$')
+        && data.displayName is string && data.displayName.size() >= 2 && data.displayName.size() <= 80
+        && data.department is string && data.department.size() >= 2 && data.department.size() <= 80
+        && isValidId(data.addedBy)
+        && data.createdAt is timestamp;
+    }
+
+    function isValidUserProfile(data, expectedUid) {
+      return data.keys().hasAll(['uid', 'displayName', 'email', 'updatedAt'])
+        && data.keys().hasOnly(['uid', 'displayName', 'email', 'updatedAt'])
+        && isValidId(data.uid) && data.uid == expectedUid
+        && data.displayName is string && data.displayName.size() >= 1 && data.displayName.size() <= 80
+        && data.email is string && data.email.size() >= 5 && data.email.size() <= 120
+        && data.updatedAt is timestamp;
+    }
+
+    // --- Collection Rules ---
+
+    // 1. Events Catalog
+    match /events/{eventId} {
+      allow get: if isValidId(eventId) && (existing().visibility == 'public' || isOrganizer());
+      allow list: if existing().visibility == 'public';
+
+      allow create: if isVerifiedUser()
+        && isValidId(eventId)
+        && isValidEvent(incoming())
+        && incoming().id == eventId
+        && incoming().organizerId == request.auth.uid
+        && incoming().registeredCount == 0
+        && incoming().createdAt == request.time
+        && incoming().updatedAt == request.time
+        && isOrganizer();
+
+      allow update: if isVerifiedUser()
+        && isValidId(eventId)
+        && isValidEvent(incoming())
+        && incoming().id == existing().id
+        && incoming().organizerId == existing().organizerId
+        && incoming().createdAt == existing().createdAt
+        && incoming().updatedAt == request.time
+        && (
+          // Tier 1: Verified Organizer editing event details or marking completed
+          (
+            isOrganizer()
+            && incoming().registeredCount == existing().registeredCount
+            && incoming().diff(existing()).affectedKeys().hasOnly([
+              'title', 'category', 'date', 'time', 'venue', 'description',
+              'department', 'deadline', 'deadlineMs', 'capacity', 'status',
+              'imageKey', 'organizerName', 'updatedAt'
+            ])
+            && incoming().capacity >= existing().registeredCount
+          )
+          ||
+          // Tier 2: Student atomic seat reservation
+          (
+            existing().status == 'upcoming'
+            && request.time.toMillis() < existing().deadlineMs
+            && incoming().diff(existing()).affectedKeys().hasOnly(['registeredCount', 'updatedAt'])
+            && incoming().registeredCount == existing().registeredCount + 1
+            && incoming().registeredCount <= existing().capacity
+            && !exists(/databases/$(database)/documents/events/$(eventId)/registrations/$(request.auth.uid))
+            && existsAfter(/databases/$(database)/documents/events/$(eventId)/registrations/$(request.auth.uid))
+          )
+        );
+
+      allow delete: if isValidId(eventId) && isOrganizer();
+
+      // 2. Event Registrations Subcollection (PII Protected)
+      match /registrations/{regUserId} {
+        allow get: if isValidId(eventId) && isValidId(regUserId) && isVerifiedUser() && (
+          request.auth.uid == regUserId || isOrganizer()
+        );
+        allow list: if isVerifiedUser() && (
+          existing().userId == request.auth.uid
+          || existing().eventOrganizerId == request.auth.uid
+          || isBootstrappedAdmin()
+        );
+
+        allow create: if isVerifiedUser()
+          && isValidId(eventId)
+          && isValidId(regUserId)
+          && regUserId == request.auth.uid
+          && isValidRegistration(incoming(), eventId, request.auth.uid)
+          && incoming().registeredAt == request.time
+          && exists(/databases/$(database)/documents/events/$(eventId))
+          && incoming().eventOrganizerId == get(/databases/$(database)/documents/events/$(eventId)).data.organizerId
+          && get(/databases/$(database)/documents/events/$(eventId)).data.status == 'upcoming'
+          && request.time.toMillis() < get(/databases/$(database)/documents/events/$(eventId)).data.deadlineMs
+          && getAfter(/databases/$(database)/documents/events/$(eventId)).data.registeredCount
+            == get(/databases/$(database)/documents/events/$(eventId)).data.registeredCount + 1
+          && existsAfter(/databases/$(database)/documents/events/$(eventId)/locks/$(incoming().studentIdHash))
+          && existsAfter(/databases/$(database)/documents/events/$(eventId)/locks/$(incoming().emailHash))
+          && existsAfter(/databases/$(database)/documents/users/$(request.auth.uid)/registrations/$(eventId));
+
+        allow update, delete: if false;
+      }
+
+      // 3. Atomic Uniqueness Locks (No PII stored; prevents duplicate studentId/email)
+      match /locks/{lockId} {
+        allow get: if isValidId(eventId) && isValidId(lockId) && isVerifiedUser();
+        allow list: if false;
+
+        allow create: if isVerifiedUser()
+          && isValidId(eventId)
+          && isValidId(lockId)
+          && (lockId.matches('^sid_[a-f0-9]{32}$') || lockId.matches('^eml_[a-f0-9]{32}$'))
+          && isValidLock(incoming(), eventId, request.auth.uid)
+          && incoming().createdAt == request.time
+          && exists(/databases/$(database)/documents/events/$(eventId))
+          && existsAfter(/databases/$(database)/documents/events/$(eventId)/registrations/$(request.auth.uid));
+
+        allow update, delete: if false;
+      }
+    }
+
+    // 4. User Profiles & User-Scoped Registration Mirrors
+    match /users/{userId} {
+      allow get: if isValidId(userId) && isVerifiedUser() && (request.auth.uid == userId || isOrganizer());
+      allow list: if false;
+
+      allow create, update: if isVerifiedUser()
+        && isValidId(userId)
+        && request.auth.uid == userId
+        && isValidUserProfile(incoming(), userId)
+        && incoming().updatedAt == request.time;
+
+      allow delete: if false;
+
+      match /registrations/{eventId} {
+        allow get: if isValidId(userId) && isValidId(eventId) && isVerifiedUser() && (
+          request.auth.uid == userId || isOrganizer()
+        );
+        allow list: if isVerifiedUser() && existing().userId == request.auth.uid;
+
+        allow create: if isVerifiedUser()
+          && isValidId(userId)
+          && isValidId(eventId)
+          && request.auth.uid == userId
+          && isValidRegistration(incoming(), eventId, userId)
+          && incoming().registeredAt == request.time
+          && existsAfter(/databases/$(database)/documents/events/$(eventId)/registrations/$(userId));
+
+        allow update, delete: if false;
+      }
+    }
+
+    // 5. Verified Organizers Allowlist
+    match /organizers/{organizerUid} {
+      allow get: if isValidId(organizerUid) && isVerifiedUser() && (
+        request.auth.uid == organizerUid || isOrganizer()
+      );
+      allow list: if isBootstrappedAdmin();
+
+      allow create: if isVerifiedUser()
+        && isValidId(organizerUid)
+        && isOrganizer()
+        && isValidOrganizer(incoming(), organizerUid)
+        && incoming().addedBy == request.auth.uid
+        && incoming().createdAt == request.time;
+
+      allow update: if false;
+      allow delete: if isValidId(organizerUid) && isBootstrappedAdmin();
+    }
+  }
+}
